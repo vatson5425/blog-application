@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sign in to your Blogify account to manage, write, and publish your articles.">
+  <title>Login — Blogify</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="site-header">
+    <div class="container navbar">
+      <a href="index.html" class="nav-brand">
+        <svg viewBox="0 0 24 24">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+        </svg>
+        <span>Blogify</span>
+      </a>
+
+      <ul class="nav-links" id="navLinksMenu">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="index.html#explore" class="nav-link">Explore Blogs</a></li>
+        <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+      </ul>
+
+      <div class="nav-actions" id="navAuthActions">
+        <a href="register.html" class="btn btn-primary btn-sm">Create Account</a>
+      </div>
+
+      <button class="nav-toggle-btn" id="navToggleBtn" aria-label="Toggle Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Login Form Main Section -->
+  <main class="main-content auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <h1 class="auth-title">Welcome Back</h1>
+        <p class="auth-subtitle">Enter your credentials to access your blog dashboard</p>
+      </div>
+
+      <!-- Demo Credentials Helper Card -->
+      <div class="demo-hint-box">
+        <strong>Demo Credentials:</strong>
+        <span>Email: <code>alex@example.com</code> &bull; Password: <code>Password123</code></span>
+      </div>
+
+      <!-- Dynamic Alert Banner for feedback -->
+      <div id="loginAlertBanner" class="alert-banner"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label for="loginEmail" class="form-label">Email Address</label>
+          <input 
+            type="email" 
+            id="loginEmail" 
+            class="form-control" 
+            placeholder="name@example.com" 
+            required 
+            autocomplete="email"
+          >
+          <div class="form-error-msg"></div>
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <label for="loginPassword" class="form-label" style="margin-bottom: 0;">Password</label>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Min. 6 chars</span>
+          </div>
+          <div class="password-wrapper">
+            <input 
+              type="password" 
+              id="loginPassword" 
+              class="form-control" 
+              placeholder="Enter your password" 
+              required 
+              autocomplete="current-password"
+            >
+            <button 
+              type="button" 
+              class="password-toggle-btn" 
+              data-target="loginPassword" 
+              aria-label="Toggle password visibility"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+          <div class="form-error-msg"></div>
+        </div>
+
+        <div class="form-row-checkbox">
+          <label class="checkbox-label">
+            <input type="checkbox" id="rememberMe">
+            <span>Remember my email</span>
+          </label>
+          <a href="#" style="color: var(--primary); font-size: 0.825rem; font-weight: 500;">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginSubmitBtn">
+          Sign In to Dashboard
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Don't have an account yet? <a href="register.html">Create an account</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="site-footer" style="padding: 2.5rem 0 1.5rem;">
+    <div class="container footer-bottom" style="border-top: none; padding-top: 0; justify-content: center; text-align: center;">
+      <p>&copy; 2026 Blogify. Protected demo environment with LocalStorage authentication.</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

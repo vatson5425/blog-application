@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Write, edit, and publish engaging articles with Blogify's modern editor.">
+  <title>Blog Editor — Blogify</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="site-header">
+    <div class="container navbar">
+      <a href="index.html" class="nav-brand">
+        <svg viewBox="0 0 24 24">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+        </svg>
+        <span>Blogify</span>
+      </a>
+
+      <ul class="nav-links" id="navLinksMenu">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="index.html#explore" class="nav-link">Explore Blogs</a></li>
+        <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+      </ul>
+
+      <div class="nav-actions" id="navAuthActions">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <button class="nav-toggle-btn" id="navToggleBtn" aria-label="Toggle Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Blog Editor Main Section -->
+  <main class="main-content editor-layout container">
+    <div class="editor-card">
+      <div class="editor-header">
+        <div>
+          <h1 id="editorPageHeading" style="font-size: 1.75rem;">Create New Blog Post</h1>
+          <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">
+            Draft your thoughts, add images, and publish to the global community
+          </p>
+        </div>
+        <a href="dashboard.html" class="btn btn-outline btn-sm">
+          &larr; Back to Dashboard
+        </a>
+      </div>
+
+      <!-- Feedback alert -->
+      <div id="editorAlertBanner" class="alert-banner"></div>
+
+      <form id="blogEditorForm" novalidate>
+        <div class="form-group">
+          <label for="postTitle" class="form-label">Blog Title *</label>
+          <input 
+            type="text" 
+            id="postTitle" 
+            class="form-control" 
+            placeholder="e.g., 10 Frontend Architecture Rules for Clean Code" 
+            required
+          >
+          <div class="form-error-msg"></div>
+        </div>
+
+        <div class="editor-grid-2">
+          <div class="form-group">
+            <label for="postCategory" class="form-label">Category *</label>
+            <select id="postCategory" class="form-control" required>
+              <option value="Engineering">Engineering</option>
+              <option value="Design">Design</option>
+              <option value="JavaScript">JavaScript</option>
+              <option value="Technology">Technology</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="postStatus" class="form-label">Publication Status</label>
+            <select id="postStatus" class="form-control">
+              <option value="published">Published (Live immediately)</option>
+              <option value="draft">Draft (Saved privately)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="postImageUrl" class="form-label">Featured Image URL</label>
+          <input 
+            type="url" 
+            id="postImageUrl" 
+            class="form-control" 
+            placeholder="https://images.unsplash.com/photo-..." 
+          >
+          <span class="form-helper">Paste any valid image URL or leave blank for a default curated tech banner.</span>
+          
+          <!-- Live Image Preview Box -->
+          <div class="img-preview-box">
+            <span id="imgPlaceholderText" class="img-preview-placeholder">Image preview will appear here</span>
+            <img id="imagePreview" src="" alt="Preview" style="display: none;" onerror="this.style.display='none'; document.getElementById('imgPlaceholderText').style.display='block'; document.getElementById('imgPlaceholderText').textContent='Invalid image URL';">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="postExcerpt" class="form-label">Short Description / Excerpt *</label>
+          <textarea 
+            id="postExcerpt" 
+            class="form-control" 
+            rows="2" 
+            placeholder="Write a brief, catchy 1-2 sentence summary for article preview cards..." 
+            required
+          ></textarea>
+          <div class="form-error-msg"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="postContent" class="form-label">Full Blog Content *</label>
+          <textarea 
+            id="postContent" 
+            class="form-control" 
+            rows="8" 
+            placeholder="Write your article markdown or full paragraphs here..." 
+            required
+          ></textarea>
+          <div class="form-error-msg"></div>
+        </div>
+
+        <div class="editor-actions">
+          <button type="button" class="btn btn-outline" id="saveDraftBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Save as Draft
+          </button>
+
+          <button type="button" class="btn btn-primary" id="publishBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            Publish Article
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="site-footer" style="padding: 2.5rem 0 1.5rem;">
+    <div class="container footer-bottom" style="border-top: none; padding-top: 0; justify-content: center; text-align: center;">
+      <p>&copy; 2026 Blogify Editor &bull; Auto-saves your content with LocalStorage</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script src="js/blog.js"></script>
+</body>
+</html>
