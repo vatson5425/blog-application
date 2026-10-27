@@ -1,6 +1,7 @@
 /**
  * Blogify - auth.js
- * Handles Login and Registration forms, validations, show/hide password, and LocalStorage state.
+ * Handles Login and Registration forms with backend REST API calls (POST /api/auth/register, POST /api/auth/login),
+ * show/hide password toggles, input validation, and JWT session handling.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -20,6 +21,7 @@ function setupLoginForm() {
   const passwordInput = document.getElementById('loginPassword');
   const rememberCheckbox = document.getElementById('rememberMe');
   const alertBanner = document.getElementById('loginAlertBanner');
+  const submitBtn = document.getElementById('loginSubmitBtn');
 
   // Check if credentials remembered
   const rememberedEmail = localStorage.getItem('blogify_remembered_email');
@@ -28,7 +30,7 @@ function setupLoginForm() {
     if (rememberCheckbox) rememberCheckbox.checked = true;
   }
 
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideAlert(alertBanner);
 
@@ -57,35 +59,61 @@ function setupLoginForm() {
 
     if (!isValid) return;
 
-    // Check credentials against registered users in LocalStorage
-    const usersJson = localStorage.getItem(STORAGE_KEYS.USERS);
-    const users = usersJson ? JSON.parse(usersJson) : [];
-
-    const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (!foundUser || foundUser.password !== password) {
-      showAlert(alertBanner, 'Invalid email or password. Please try again.', 'danger');
-      return;
+    // Set loading state on button
+    const originalBtnText = submitBtn ? submitBtn.textContent : 'Sign In';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Authenticating...';
     }
 
-    // Remember Me logic
-    if (rememberCheckbox && rememberCheckbox.checked) {
-      localStorage.setItem('blogify_remembered_email', email);
-    } else {
-      localStorage.removeItem('blogify_remembered_email');
+    try {
+      // 1. Attempt Backend API Authentication
+      const result = await AuthAPI.login(email, password);
+
+      // Remember Me logic
+      if (rememberCheckbox && rememberCheckbox.checked) {
+        localStorage.setItem('blogify_remembered_email', email);
+      } else {
+        localStorage.removeItem('blogify_remembered_email');
+      }
+
+      // Save token and user in session
+      setAuthSession(result.token, result.user);
+
+      showAlert(alertBanner, 'Login successful! Redirecting to dashboard...', 'success');
+
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 900);
+    } catch (error) {
+      // 2. Fallback to LocalStorage demo if backend server is offline
+      if (error.isNetworkError) {
+        console.warn('Backend server offline. Falling back to local demo authentication...');
+        const usersJson = localStorage.getItem(STORAGE_KEYS.USERS);
+        const users = usersJson ? JSON.parse(usersJson) : [];
+        const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+        if (foundUser && foundUser.password === password) {
+          localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify({
+            id: 'demo_' + Date.now(),
+            name: foundUser.name,
+            email: foundUser.email
+          }));
+          showAlert(alertBanner, 'Logged in using local demo mode (Backend server offline). Redirecting...', 'success');
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 1000);
+          return;
+        }
+      }
+
+      showAlert(alertBanner, error.message || 'Invalid email or password. Please try again.', 'danger');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+      }
     }
-
-    // Save current session
-    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify({
-      name: foundUser.name,
-      email: foundUser.email
-    }));
-
-    showAlert(alertBanner, 'Login successful! Redirecting to dashboard...', 'success');
-
-    setTimeout(() => {
-      window.location.href = 'dashboard.html';
-    }, 1000);
   });
 }
 
@@ -101,8 +129,9 @@ function setupRegisterForm() {
   const passwordInput = document.getElementById('regPassword');
   const confirmPasswordInput = document.getElementById('regConfirmPassword');
   const alertBanner = document.getElementById('registerAlertBanner');
+  const submitBtn = document.getElementById('registerSubmitBtn');
 
-  registerForm.addEventListener('submit', (e) => {
+  registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideAlert(alertBanner);
 
@@ -158,32 +187,60 @@ function setupRegisterForm() {
 
     if (!isValid) return;
 
-    // Check if user already exists
-    const usersJson = localStorage.getItem(STORAGE_KEYS.USERS);
-    const users = usersJson ? JSON.parse(usersJson) : [];
-
-    const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (existingUser) {
-      showAlert(alertBanner, 'An account with this email already exists. Please log in.', 'danger');
-      return;
+    // Set loading state on button
+    const originalBtnText = submitBtn ? submitBtn.textContent : 'Register & Continue';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Registering Account...';
     }
 
-    // Save new user
-    const newUser = { name, email, password };
-    users.push(newUser);
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    try {
+      // 1. Submit to Backend API (POST /api/auth/register)
+      const result = await AuthAPI.register(name, email, password);
 
-    // Also sign them in immediately
-    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify({
-      name: newUser.name,
-      email: newUser.email
-    }));
+      // Save session credentials
+      setAuthSession(result.token, result.user);
 
-    showAlert(alertBanner, 'Account created successfully! Preparing your dashboard...', 'success');
+      showAlert(
+        alertBanner,
+        'Account created successfully! Redirecting you to the login page...',
+        'success'
+      );
 
-    setTimeout(() => {
-      window.location.href = 'dashboard.html';
-    }, 1200);
+      // Per internship specification: redirect user to the login page after successful registration
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 1500);
+    } catch (error) {
+      // 2. Fallback to LocalStorage demo if backend is offline
+      if (error.isNetworkError) {
+        console.warn('Backend server offline. Registering into local demo storage...');
+        const usersJson = localStorage.getItem(STORAGE_KEYS.USERS);
+        const users = usersJson ? JSON.parse(usersJson) : [];
+
+        if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+          showAlert(alertBanner, 'An account with this email already exists.', 'danger');
+          return;
+        }
+
+        const newUser = { name, email, password };
+        users.push(newUser);
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+
+        showAlert(alertBanner, 'Registration successful (Local Demo). Redirecting to login...', 'success');
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 1200);
+        return;
+      }
+
+      showAlert(alertBanner, error.message || 'Registration failed. Please try again.', 'danger');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+      }
+    }
   });
 }
 

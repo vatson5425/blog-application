@@ -109,7 +109,14 @@
     <!-- User Posts Table Section -->
     <div class="dashboard-table-container">
       <div class="table-header-bar">
-        <h2 class="table-header-title">Your Articles</h2>
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+          <h2 class="table-header-title">Your Articles</h2>
+          <div class="filter-tags" id="dashboardStatusFilters" style="margin-bottom: 0;">
+            <button class="filter-btn active" data-status="all" type="button">All (<span id="dashFilterCountAll">0</span>)</button>
+            <button class="filter-btn" data-status="published" type="button">Published (<span id="dashFilterCountPub">0</span>)</button>
+            <button class="filter-btn" data-status="draft" type="button">Drafts (<span id="dashFilterCountDraft">0</span>)</button>
+          </div>
+        </div>
         <a href="create-blog.html" class="btn btn-secondary btn-sm">+ Add New</a>
       </div>
 
@@ -167,6 +174,7 @@
   </footer>
 
   <!-- Scripts -->
+  <script src="js/api.js"></script>
   <script src="js/main.js"></script>
   <script src="js/dashboard.js"></script>
 </body>

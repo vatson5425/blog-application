@@ -1,178 +1,327 @@
-# 📝 Blogify — Responsive Modern Blog Application
+# 📝 Blogify — Full-Stack Blog Application
 
-> **Frontend Development Internship — Module 1, Task 1**  
-> A complete, responsive, and professional editorial blogging web application built purely with **HTML5, CSS3, and Vanilla JavaScript**, powered by browser **LocalStorage**.
-
----
-
-## 🌟 Overview & Objectives
-
-**Blogify** is a modern editorial blogging platform designed for developers, designers, and creative writers. Built as part of a frontend engineering internship task, it fulfills all industry-grade UI/UX benchmarks, complete responsiveness, accessibility, and dynamic local client-side data persistence.
-
-### Key Objectives:
-- ✅ Create a clean, elegant visual aesthetic using modern typography (**Inter**, **Plus Jakarta Sans**), subtle shadows, and an indigo color palette.
-- ✅ Implement seamless client-side authentication and session handling using **LocalStorage**.
-- ✅ Provide a real-time reactive blog catalog with **live text search** and **instant category filtering**.
-- ✅ Build an author **Creator Dashboard** with dynamic metric counters (Total, Published, Draft) and interactive management tables.
-- ✅ Implement a complete **Blog Editor** supporting image URL live previews, draft vs. publish state management, and post editing.
-- ✅ Strict compliance: **Zero external frameworks or libraries** (No React, Vue, Bootstrap, or Tailwind). Pure standard web technologies.
+> **Frontend & Backend Development Internship**  
+> **Module 1:** Responsive Frontend Application (HTML5, CSS3, Vanilla JS)  
+> **Module 2:** Backend RESTful APIs (Node.js, Express.js, MongoDB, Mongoose, JWT)  
+> **GitHub Repository:** [https://github.com/vatson5425/blog-application](https://github.com/vatson5425/blog-application)
 
 ---
 
-## 🛠️ Technologies Used
+## 🌟 Project Overview
 
-| Technology | Purpose |
+**Blogify** is a complete, full-stack, responsive editorial blogging platform. Originally created as an accessible, modern frontend, it has now been extended with an enterprise-standard **Node.js & Express REST API** powered by **MongoDB Atlas**, authenticated securely via **JSON Web Tokens (JWT)** and **bcryptjs**.
+
+---
+
+## 🚀 Module 1: Frontend Highlights
+- **5 Complete Responsive Pages:**
+  - `index.html`: Home page featuring hero showcase, live search, topic filters, blog cards, and quick reading modal.
+  - `login.html`: Centered login card with email validation, password show/hide, and demo credential hints.
+  - `register.html`: Registration form with full name, email, password strength checks, and confirm-password verification.
+  - `dashboard.html`: Creator dashboard with live analytics counters (Total, Published, Draft) and interactive article table.
+  - `create-blog.html`: Dedicated blog composer with live featured image preview, draft/publish options, and edit-in-place support.
+- **Design Excellence:** Pure Vanilla CSS3 with custom variables, smooth transitions, glassmorphic header, mobile hamburger drawer, and zero external CSS frameworks (no Tailwind/Bootstrap).
+- **Graceful Offline / Fallback Support:** Integrated client-side fallback that keeps the application fully functional even when the backend server is offline.
+
+---
+
+## ⚡ Module 2: Backend REST API Highlights
+- **Node.js & Express.js Architecture:** Modular architecture structured with clean separation of concerns (`config/`, `models/`, `controllers/`, `routes/`, `middleware/`).
+- **MongoDB & Mongoose:** Schema modeling with pre-save password hashing, email normalization, author relations (`ref: 'User'`), and search indexes.
+- **Stateless JWT Authentication:**
+  - Passwords securely hashed with `bcryptjs` (salt rounds: 10).
+  - Signed JSON Web Tokens (`jsonwebtoken`) with configurable expiration.
+  - Protected endpoints secured via `authMiddleware.js`.
+  - Passwords and sensitive hashes are never exposed in JSON responses.
+- **Strict Authorization:** Only authors can edit or delete their own posts; unauthorized access returns HTTP 403. Private drafts can only be accessed by the creator.
+- **Centralized Error Handling:** Custom middleware intercepts Mongoose validation errors, duplicate keys (`code: 11000`), cast errors, and undefined routes (HTTP 404).
+
+---
+
+## 🛠️ Complete Technology Stack
+
+| Layer | Technologies |
 | :--- | :--- |
-| **HTML5** | Semantic structure (`<header>`, `<nav>`, `<main>`, `<article>`, `<footer>`) |
-| **CSS3** | Custom properties (CSS variables), Flexbox, CSS Grid, animations, and responsive media queries |
-| **Vanilla JavaScript (ES6+)** | DOM manipulation, validation, routing helpers, modal handling, and state sync |
-| **LocalStorage API** | Browser-level persistence for demo users, active sessions, and blog articles |
-| **Google Fonts** | Professional web typography (`Inter` & `Plus Jakarta Sans`) |
-| **Inline SVG Icons** | Lightweight, high-resolution icons with zero external icon dependencies |
+| **Frontend** | HTML5, CSS3 (Grid & Flexbox), Vanilla JavaScript (ES6+), Google Fonts (*Inter*, *Plus Jakarta Sans*) |
+| **Backend Runtime** | Node.js (v18+ LTS recommended) |
+| **Backend Framework** | Express.js 4.x |
+| **Database & ODM** | MongoDB (MongoDB Atlas cloud cluster or local), Mongoose 8.x |
+| **Authentication & Security** | JSON Web Tokens (`jsonwebtoken`), `bcryptjs`, `cors`, `dotenv`, `express-validator` |
+| **API Client** | Native `fetch` with Bearer token authentication (`js/api.js`) |
 
 ---
 
-## 🚀 Key Features
-
-### 1. Home Page (`index.html`)
-- **Sticky Glassmorphic Navigation:** Brand logo, desktop & mobile hamburger menu, dynamic auth action pills.
-- **Hero Banner:** Call-to-actions, live statistics highlights, and featured article showcase card.
-- **Search & Category Filtering:** Instant search bar filtering by title, excerpt, content, or author, combined with tag pills (*All*, *Engineering*, *Design*, *JavaScript*, *Technology*).
-- **Responsive Blog Cards:** Image cover, category badge, publication date, read time estimate, author badge, and quick modal reader.
-- **Empty States:** Friendly feedback UI when no articles match search queries.
-
-### 2. Login Page (`login.html`)
-- Centered, elevated card layout with smooth shadows.
-- Form validation for email format and password presence.
-- **Show/Hide password toggle** with eye icons.
-- **"Remember Me"** functionality caching email in LocalStorage.
-- Pre-seeded **Demo Credentials Helper**:
-  - **Email:** `alex@example.com`
-  - **Password:** `Password123`
-
-### 3. Register Page (`register.html`)
-- Full Name, Email, Password, and Password Confirmation fields.
-- Real-time error validation with inline feedback.
-- Prevents duplicate email registrations.
-- Automatically signs in newly registered users and redirects to Dashboard.
-
-### 4. Creator Dashboard (`dashboard.html`)
-- **Authentication Guard:** Automatically redirects unauthenticated guests to `login.html`.
-- **Dynamic Metrics Cards:** Total Articles, Published Articles, and Draft Articles counters.
-- **Articles Table:** Displays all user posts with category badges, status badges, and direct **Edit** and **Delete** actions.
-- **Modal Confirmation:** Accessible popup dialog confirming deletion before removing posts.
-
-### 5. Blog Editor (`create-blog.html`)
-- Create new posts or edit existing posts via URL query parameters (`?id=post_xxx`).
-- Form fields: Blog Title, Category, Status (Published or Draft), Short Excerpt, Content, and Featured Image URL.
-- **Live Image Previewer:** Renders the image instantly upon entering an image link.
-- Action triggers for both **Save as Draft** and **Publish Article**.
-
----
-
-## 📂 Project Structure
+## 📂 Project Directory Structure
 
 ```text
-Blog/
+blog-application/
 │
-├── index.html            # Home page (Catalog, Hero, Search, Filter, Quick Reader)
-├── login.html            # User login with validation & password toggle
-├── register.html         # User registration with password confirmation
-├── dashboard.html        # Creator dashboard, analytics metrics & post table
-├── create-blog.html      # Blog editor (Create, Edit, Live Image Preview)
+├── index.html            # Public homepage with search, filter, and article modal
+├── login.html            # User login with validation and password toggles
+├── register.html         # User registration with validation and redirect
+├── dashboard.html        # Creator dashboard with analytics and post management
+├── create-blog.html      # Blog composer and editor with live image preview
 │
 ├── css/
-│   └── style.css         # Master stylesheet (Tokens, Flexbox, Grid, Themes)
+│   └── style.css         # Complete master stylesheet
 │
 ├── js/
-│   ├── main.js           # Storage seed, session manager, toast & global nav
-│   ├── auth.js           # Login & register validation, password toggles
-│   ├── dashboard.js      # Dashboard stats, table populator, delete modal
-│   └── blog.js           # Blog grid renderer, search, filter & editor saving
+│   ├── api.js            # Centralized REST client communicating with Express API
+│   ├── main.js           # Session manager, global navigation, and toast alerts
+│   ├── auth.js           # Form handlers for login and registration
+│   ├── dashboard.js      # Dashboard data populator and delete modal handler
+│   └── blog.js           # Catalog search/filter and blog composer logic
 │
 ├── assets/
-│   └── images/           # Local media assets
+│   └── images/           # Application media assets
 │
-└── README.md             # Project documentation & GitHub guide
+├── backend/
+│   ├── server.js         # Express app entry point & MongoDB connection gate
+│   ├── package.json      # Backend scripts and dependencies
+│   ├── .env.example      # Environment variable template with safe placeholders
+│   ├── .gitignore        # Ignores backend/node_modules and backend/.env
+│   ├── config/
+│   │   └── db.js         # Mongoose connection logic
+│   ├── models/
+│   │   ├── User.js       # User model with bcrypt pre-save hook
+│   │   └── Blog.js       # Blog model with author reference and status
+│   ├── controllers/
+│   │   ├── authController.js # Handlers for register, login, and getMe
+│   │   └── blogController.js # CRUD handlers and ownership checks
+│   ├── routes/
+│   │   ├── authRoutes.js # Express router for auth endpoints
+│   │   └── blogRoutes.js # Express router for blog endpoints
+│   ├── middleware/
+│   │   ├── authMiddleware.js # JWT Bearer token authentication
+│   │   └── errorMiddleware.js# Centralized error handler & 404 handler
+│   └── README.md         # Dedicated backend documentation
+│
+├── .gitignore            # Root Git ignore (protects all .env files and node_modules)
+└── README.md             # Master full-stack project documentation
 ```
 
 ---
 
-## 💻 Local Development Setup
+## 🌐 API Endpoints Reference
 
-Follow these simple steps to run the project locally on your machine:
+### Base URL: `http://localhost:5000/api`
 
-### Method 1: Using VS Code Live Server (Recommended)
-1. Install [Visual Studio Code](https://code.visualstudio.com/) if you haven't already.
-2. Open VS Code and install the **Live Server** extension (by *Ritwick Dey*) from the Extensions marketplace (`Ctrl + Shift + X`).
-3. Click **File** &rarr; **Open Folder...** and select the `Blog` project directory.
-4. Right-click on `index.html` in the file explorer and select **"Open with Live Server"**.
-5. Your default browser will launch at `http://127.0.0.1:5500/index.html`.
-
-### Method 2: Direct Browser Launch
-1. Open the project folder in your file explorer.
-2. Double-click `index.html` to open it in Chrome, Edge, Firefox, or Safari.
-
----
-
-## 🧪 Testing Checklist & Verification Guide
-
-| Step | Feature to Test | Expected Result |
-| :---: | :--- | :--- |
-| **1** | Open `index.html` | Pre-seeded sample articles display with cards and hero section. |
-| **2** | Category Filter | Clicking *Design* or *Engineering* filters posts instantly. |
-| **3** | Search Bar | Typing "JavaScript" filters cards matching title/content in real time. |
-| **4** | Quick Read Modal | Clicking "Read Post &rarr;" opens the full article in a clean modal popup. |
-| **5** | Mobile View | Resize browser or toggle mobile mode; hamburger menu toggles navigation links. |
-| **6** | Demo Login | Go to `login.html`, click Sign In with demo credentials; redirects to Dashboard. |
-| **7** | Registration | Go to `register.html`, create a new user; redirects to Dashboard with new user's name. |
-| **8** | Dashboard Metrics | Total, Published, and Draft counts reflect existing articles accurately. |
-| **9** | Create Blog Post | Go to `create-blog.html`, fill fields, and click "Publish Article"; post appears in list. |
-| **10**| Save as Draft | Click "Save as Draft"; post shows amber "Draft" badge in dashboard. |
-| **11**| Edit Post | Click "Edit" in dashboard; form pre-populates, allowing updates. |
-| **12**| Delete Post | Click "Delete"; modal pops up, clicking "Yes, Delete" removes post and updates stats. |
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| **GET** | `/health` | Public | Health check verifying server status |
+| **POST** | `/auth/register` | Public | Register new user account (`name`, `email`, `password`) |
+| **POST** | `/auth/login` | Public | Authenticate user credentials and receive JWT |
+| **GET** | `/auth/me` | Protected (JWT) | Retrieve currently authenticated user profile |
+| **GET** | `/blogs` | Public | Retrieve published blogs (supports `?search=` and `?category=`) |
+| **GET** | `/blogs/my` | Protected (JWT) | Retrieve all posts (drafts + published) by authenticated user |
+| **GET** | `/blogs/:id` | Public / Author | Retrieve single blog (drafts restricted to post author) |
+| **POST** | `/blogs` | Protected (JWT) | Create new blog post (auto-assigns authenticated user as author) |
+| **PUT** | `/blogs/:id` | Protected (Author) | Update an existing post owned by the caller |
+| **DELETE**| `/blogs/:id` | Protected (Author) | Delete an existing post owned by the caller |
 
 ---
 
-## 📤 Step-by-Step GitHub Upload Guide
+## 🍃 MongoDB Setup Instructions (MongoDB Atlas Cloud)
 
-Follow these steps to upload your project to your GitHub profile:
+1. **Sign Up:** Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) and create a free account.
+2. **Create a Free Cluster:** Choose the free **M0 Shared Tier** and select your closest cloud region.
+3. **Create Database User:**
+   - Under **Security &rarr; Database Access**, click **Add New Database User**.
+   - Select **Password Authentication**. Enter a username (e.g. `blog_admin`) and a secure password.
+   - Assign user privileges: **Read and write to any database**.
+4. **Configure Network Access:**
+   - Under **Security &rarr; Network Access**, click **Add IP Address**.
+   - For local development, choose **Allow Access from Anywhere (`0.0.0.0/0`)** or add your current IP address.
+5. **Get Connection String:**
+   - Under **Databases**, click **Connect** on your cluster.
+   - Choose **Drivers** (Node.js).
+   - Copy the connection URI:
+     `mongodb+srv://<username>:<password>@cluster0.xxxx.mongodb.net/blogify?retryWrites=true&w=majority`
+   - Replace `<username>` and `<password>` with your database user credentials.
 
-1. **Initialize Git:**
-   Open your terminal in the `Blog` folder:
+---
+
+## ⚙️ Environment Variables Setup
+
+1. In the `backend/` directory, copy `.env.example` to create your real `.env`:
    ```bash
-   git init
-   git add .
-   git commit -m "feat: complete responsive blog application internship task"
+   cp backend/.env.example backend/.env
    ```
-
-2. **Create a GitHub Repository:**
-   - Go to [GitHub](https://github.com/) and click **New Repository**.
-   - Name it `responsive-blog-application`.
-   - Set it to **Public**.
-   - Do not check "Initialize with README" (since we already have one).
-   - Click **Create repository**.
-
-3. **Push Local Code to GitHub:**
-   ```bash
-   git remote add origin https://github.com/<your-username>/responsive-blog-application.git
-   git branch -M main
-   git push -u origin main
+2. Open `backend/.env` and update the values:
+   ```env
+   PORT=5000
+   MONGODB_URI=mongodb+srv://blog_admin:YOUR_ACTUAL_PASSWORD@cluster0.xxxx.mongodb.net/blogify?retryWrites=true&w=majority
+   JWT_SECRET=my_super_secret_jwt_random_key_min_32_characters_long_12345
+   JWT_EXPIRES_IN=1d
+   CLIENT_ORIGIN=http://127.0.0.1:5500
    ```
-
-4. **Optional: Enable GitHub Pages (Live Demo Link):**
-   - In your repository, go to **Settings** &rarr; **Pages**.
-   - Under *Source*, select **Deploy from a branch**, choose `main`, and click **Save**.
-   - Your project will be live at `https://<your-username>.github.io/responsive-blog-application/`!
+> ⚠️ **Important Security Rule:** Never commit `backend/.env` to GitHub. The root and backend `.gitignore` files are already configured to protect your credentials.
 
 ---
 
-## 🚀 Future Enhancements
-- [ ] Rich text editor (WYSIWYG) with bold/italic controls.
-- [ ] Dark / Light mode theme switcher toggle.
-- [ ] Like counter and comment section with LocalStorage sync.
-- [ ] Backend API integration using Node.js/Express and MongoDB.
+## 💻 Local Development Setup & Running Guide
+
+### 1. Prerequisites Check
+Verify that Node.js and npm are installed on your machine:
+```bash
+node --version
+npm --version
+```
+*(If Node.js is not yet installed, download the current LTS installer from [nodejs.org](https://nodejs.org/) and install it).*
+
+### 2. Install Backend Dependencies
+Open a terminal in the `backend/` directory and install packages:
+```powershell
+cd backend
+npm install
+```
+
+### 3. Start the Backend Server
+```powershell
+# Development mode with auto-reload (using nodemon):
+npm run dev
+
+# Or standard production mode:
+npm start
+```
+When running, you should see:
+```text
+✅ MongoDB Connected Successfully: cluster0.xxxx.mongodb.net
+🚀 Blog API Server running in development mode on port 5000
+🔗 Health check available at: http://localhost:5000/api/health
+```
+
+### 4. Start the Frontend
+In a separate terminal or in VS Code:
+1. Open the project root folder `C:\Blog`.
+2. Right-click `index.html` and select **"Open with Live Server"** (running at `http://127.0.0.1:5500`).
+3. The frontend is automatically wired to communicate with `http://localhost:5000/api`.
 
 ---
 
-**Developed with ❤️ for the Frontend Development Internship Program.**
+## 🧪 Comprehensive API Testing Checklist
+
+You can test every endpoint using Postman, Thunder Client, or cURL:
+
+### 1. Health Check
+- **Request:** `GET http://localhost:5000/api/health`
+- **Expected:** `200 OK` &rarr; `{ "success": true, "message": "Blog API server is running" }`
+
+### 2. User Registration
+- **Request:** `POST http://localhost:5000/api/auth/register`
+- **Body:**
+  ```json
+  {
+    "name": "Alex Johnson",
+    "email": "alex@example.com",
+    "password": "Password123"
+  }
+  ```
+- **Expected:** `201 Created` &rarr; returns JWT token and user info without password.
+- **Negative Test:** Submitting the same email again returns `400 Bad Request` with message *"An account with this email address already exists"*.
+
+### 3. User Login
+- **Request:** `POST http://localhost:5000/api/auth/login`
+- **Body:**
+  ```json
+  {
+    "email": "alex@example.com",
+    "password": "Password123"
+  }
+  ```
+- **Expected:** `200 OK` &rarr; returns signed token and user profile.
+- **Negative Test:** Wrong password returns `401 Unauthorized` with generic *"Invalid email or password"*.
+
+### 4. Fetch Current User Profile
+- **Request:** `GET http://localhost:5000/api/auth/me`
+- **Header:** `Authorization: Bearer <TOKEN>`
+- **Expected:** `200 OK` &rarr; returns profile. Sending without token returns `401 Unauthorized`.
+
+### 5. Create Blog Post
+- **Request:** `POST http://localhost:5000/api/blogs`
+- **Header:** `Authorization: Bearer <TOKEN>`
+- **Body:**
+  ```json
+  {
+    "title": "Scalable REST APIs with Express & Mongoose",
+    "category": "Engineering",
+    "description": "Learn how to structure enterprise-grade APIs in Node.js.",
+    "content": "Deep dive into controllers, services, middleware, and database validation...",
+    "status": "published"
+  }
+  ```
+- **Expected:** `201 Created` &rarr; blog created with author automatically linked to authenticated user.
+
+### 6. Public Blog Listing & Search
+- **Request:** `GET http://localhost:5000/api/blogs?search=scalable&category=Engineering`
+- **Expected:** `200 OK` &rarr; returns published blogs matching search query with populated author details.
+
+### 7. User's Dashboard Articles
+- **Request:** `GET http://localhost:5000/api/blogs/my`
+- **Header:** `Authorization: Bearer <TOKEN>`
+- **Expected:** `200 OK` &rarr; returns all blogs (drafts and published) authored by the caller.
+
+### 8. Update Blog Post (Ownership Check)
+- **Request:** `PUT http://localhost:5000/api/blogs/<BLOG_ID>`
+- **Header:** `Authorization: Bearer <TOKEN>`
+- **Body:** `{ "title": "Updated Title", "status": "draft" }`
+- **Expected:** `200 OK` if author matches; `403 Forbidden` if another user attempts the update.
+
+### 9. Delete Blog Post
+- **Request:** `DELETE http://localhost:5000/api/blogs/<BLOG_ID>`
+- **Header:** `Authorization: Bearer <TOKEN>`
+- **Expected:** `200 OK` if author matches; `403 Forbidden` if caller is not the author.
+
+---
+
+## 🔒 Security Architecture & Best Practices
+
+1. **Environment Secrets:** All sensitive credentials (`MONGODB_URI`, `JWT_SECRET`) reside solely in `.env` and are strictly excluded from version control via `.gitignore`.
+2. **Password Protection:** Passwords are never stored in plaintext. They are salted and hashed using `bcryptjs` with 10 salt rounds.
+3. **Information Disclosure Prevention:** Queries exclude password fields by default (`select: false`), and generic authentication error messages prevent user enumeration.
+4. **CORS Governance:** CORS middleware is configured to allow only trusted origins (`CLIENT_ORIGIN` / `http://127.0.0.1:5500`), blocking unauthorized cross-origin requests.
+5. **No Blind Trust on Client IDs:** Author identities are exclusively determined by verifying the signed JWT payload on the server, never by trusting client-submitted user IDs.
+6. **Production Considerations:**
+   - Deploy backend behind HTTPS/TLS to encrypt credentials and tokens in transit.
+   - For high-security environments, store JWTs in `httpOnly`, `secure`, `sameSite` cookies to defend against XSS.
+   - Implement rate-limiting (`express-rate-limit`) and security headers (`helmet`).
+
+---
+
+## 📤 GitHub Commit & Push Guide
+
+Your local project is already linked to:
+`https://github.com/vatson5425/blog-application`
+
+To commit and push Module 2 without exposing secrets:
+
+```powershell
+# 1. Review status and verify that .env is NOT staged
+& "C:\Program Files\Git\cmd\git.exe" status
+
+# 2. Stage all project files (safe .gitignore rules prevent .env from staging)
+& "C:\Program Files\Git\cmd\git.exe" add .
+
+# 3. Double-check staged files to confirm no .env is included
+& "C:\Program Files\Git\cmd\git.exe" status
+
+# 4. Commit Module 2 completion
+& "C:\Program Files\Git\cmd\git.exe" commit -m "feat(module-2): complete backend REST API with Express, MongoDB, Mongoose, and JWT authentication"
+
+# 5. Push to GitHub main branch
+& "C:\Program Files\Git\cmd\git.exe" push origin main
+```
+
+---
+
+## 🎓 Internship Reflection & Learnings
+
+Completing Module 2 bridged the gap from client-side programming to complete full-stack web development:
+- **RESTful API Principles:** Gained practical understanding of HTTP verbs (`GET`, `POST`, `PUT`, `DELETE`), status codes (`200`, `201`, `400`, `401`, `403`, `404`, `500`), and predictable JSON payloads.
+- **Authentication & Authorization:** Learned the mechanics of stateless authentication using JWTs and how middleware enforces granular role and ownership permissions.
+- **Data Modeling & Validation:** Designed resilient MongoDB schemas using Mongoose, pre-save hooks, indexing, and input sanitization via `express-validator`.
+- **Full-Stack Integration:** Replaced local-only mocks with live asynchronous `fetch` calls, handling network states, loading indicators, and graceful fallbacks.
+
+---
+
+**Developed with ❤️ for the Full-Stack Web Development Internship.**

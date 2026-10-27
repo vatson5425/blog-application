@@ -2,19 +2,22 @@
  * Blogify - dashboard.js
  * User authentication protection, statistics calculation, dynamic table rendering,
  * and post deletion with confirmation modal.
+ * Fully integrated with Backend REST APIs (GET /api/blogs/my, DELETE /api/blogs/:id, GET /api/auth/me).
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   setupDashboard();
 });
 
-function setupDashboard() {
+async function setupDashboard() {
   const dashboardContainer = document.getElementById('dashboardView');
   if (!dashboardContainer) return; // Not on dashboard.html
 
   // 1. Auth Guard: Ensure user is logged in
   const currentUser = getCurrentUser();
-  if (!currentUser) {
+  const token = typeof getAuthToken === 'function' ? getAuthToken() : localStorage.getItem(STORAGE_KEYS.JWT_TOKEN);
+
+  if (!currentUser && !token) {
     showToast('Please login to access the creator dashboard', 'danger');
     setTimeout(() => {
       window.location.href = 'login.html';
@@ -25,11 +28,11 @@ function setupDashboard() {
   // 2. Personalize Header
   const userNameElem = document.getElementById('dashUserName');
   const userGreetingElem = document.getElementById('dashGreetingName');
-  if (userNameElem) userNameElem.textContent = currentUser.name;
-  if (userGreetingElem) userGreetingElem.textContent = currentUser.name;
+  if (userNameElem && currentUser) userNameElem.textContent = currentUser.name;
+  if (userGreetingElem && currentUser) userGreetingElem.textContent = currentUser.name;
 
   // 3. Render Stats & Post List
-  renderDashboardContent(currentUser);
+  await renderDashboardContent(currentUser);
 
   // 4. Setup Delete Confirmation Modal
   setupDeleteModal();
@@ -38,11 +41,32 @@ function setupDashboard() {
 /**
  * Render blog statistics and user-specific posts table
  */
-function renderDashboardContent(user) {
-  const posts = getStoredPosts();
-  
-  // Filter posts belonging to the logged-in user (or show all if admin/demo, but filter by email)
-  const userPosts = posts.filter(p => !p.authorEmail || p.authorEmail.toLowerCase() === user.email.toLowerCase());
+async function renderDashboardContent(user) {
+  const tableBody = document.getElementById('dashboardPostsTableBody');
+  const emptyState = document.getElementById('dashboardEmptyState');
+
+  if (!tableBody) return;
+
+  // Loading state
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="6" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+        Loading your articles from server...
+      </td>
+    </tr>
+  `;
+
+  let userPosts = [];
+
+  try {
+    // 1. Fetch user articles from Backend REST API (GET /api/blogs/my)
+    const res = await BlogAPI.getMyBlogs();
+    userPosts = res.blogs || [];
+  } catch (error) {
+    console.warn('Backend unavailable, using LocalStorage fallback for dashboard:', error.message);
+    const localPosts = getStoredPosts();
+    userPosts = localPosts.filter(p => !p.authorEmail || (user && p.authorEmail.toLowerCase() === user.email.toLowerCase()));
+  }
 
   // Statistics calculation
   const totalPosts = userPosts.length;
@@ -57,59 +81,147 @@ function renderDashboardContent(user) {
   if (pubElem) pubElem.textContent = publishedPosts;
   if (draftElem) draftElem.textContent = draftPosts;
 
-  // Table Body & Empty state
-  const tableBody = document.getElementById('dashboardPostsTableBody');
-  const emptyState = document.getElementById('dashboardEmptyState');
+  const filterCountAll = document.getElementById('dashFilterCountAll');
+  const filterCountPub = document.getElementById('dashFilterCountPub');
+  const filterCountDraft = document.getElementById('dashFilterCountDraft');
+  if (filterCountAll) filterCountAll.textContent = totalPosts;
+  if (filterCountPub) filterCountPub.textContent = publishedPosts;
+  if (filterCountDraft) filterCountDraft.textContent = draftPosts;
 
-  if (!tableBody) return;
+  // Render Table based on active status filter
+  let currentStatusFilter = 'all';
 
-  if (userPosts.length === 0) {
+  function renderTableRows() {
+    const filtered = userPosts.filter(p => {
+      if (currentStatusFilter === 'all') return true;
+      return p.status === currentStatusFilter;
+    });
+
+    if (filtered.length === 0) {
+      tableBody.innerHTML = '';
+      if (emptyState) {
+        emptyState.style.display = 'block';
+        const emptyTitle = emptyState.querySelector('.empty-state-title');
+        const emptyDesc = emptyState.querySelector('.empty-state-desc');
+        if (currentStatusFilter === 'draft') {
+          if (emptyTitle) emptyTitle.textContent = 'No draft articles';
+          if (emptyDesc) emptyDesc.textContent = 'You have no saved drafts. Click "Write a Post" and choose "Save as Draft" to keep drafts privately.';
+        } else if (currentStatusFilter === 'published') {
+          if (emptyTitle) emptyTitle.textContent = 'No published articles';
+          if (emptyDesc) emptyDesc.textContent = 'You have not published any articles yet.';
+        } else {
+          if (emptyTitle) emptyTitle.textContent = 'No articles yet';
+          if (emptyDesc) emptyDesc.textContent = "You haven't created any articles under this account yet. Click below to compose your first post!";
+        }
+      }
+      return;
+    }
+
+    if (emptyState) emptyState.style.display = 'none';
     tableBody.innerHTML = '';
-    if (emptyState) emptyState.style.display = 'block';
-    return;
+
+    filtered.forEach((post, index) => {
+      const postId = post._id || post.id;
+      const isPublished = post.status === 'published';
+      const statusClass = isPublished ? 'published' : 'draft';
+      const statusLabel = isPublished ? 'Published' : 'Draft';
+      const rawDate = post.createdAt ? new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : (post.date || 'Recent');
+
+      const tr = document.createElement('tr');
+      tr.id = `row-${postId}`;
+
+      // Index column
+      const tdIndex = document.createElement('td');
+      const strongIndex = document.createElement('strong');
+      strongIndex.textContent = `#${index + 1}`;
+      tdIndex.appendChild(strongIndex);
+
+      // Title column
+      const tdTitle = document.createElement('td');
+      const spanTitle = document.createElement('span');
+      spanTitle.className = 'table-post-title';
+      spanTitle.title = post.title || 'Untitled';
+      spanTitle.textContent = post.title || 'Untitled';
+      tdTitle.appendChild(spanTitle);
+
+    // Category column
+    const tdCategory = document.createElement('td');
+    const badgeCategory = document.createElement('span');
+    badgeCategory.className = 'card-badge';
+    badgeCategory.style.position = 'static';
+    badgeCategory.textContent = post.category || 'General';
+    tdCategory.appendChild(badgeCategory);
+
+    // Status column
+    const tdStatus = document.createElement('td');
+    const badgeStatus = document.createElement('span');
+    badgeStatus.className = `status-badge ${statusClass}`;
+    badgeStatus.textContent = statusLabel;
+    tdStatus.appendChild(badgeStatus);
+
+    // Date column
+    const tdDate = document.createElement('td');
+    tdDate.textContent = rawDate;
+
+    // Actions column
+    const tdActions = document.createElement('td');
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'table-actions';
+
+    const editLink = document.createElement('a');
+    editLink.href = `create-blog.html?id=${postId}`;
+    editLink.className = 'btn btn-secondary btn-sm';
+    editLink.title = 'Edit Post';
+    editLink.innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+      </svg>
+      Edit
+    `;
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'btn btn-danger btn-sm delete-post-btn';
+    deleteBtn.setAttribute('data-id', postId);
+    deleteBtn.setAttribute('data-title', post.title || 'Untitled');
+    deleteBtn.title = 'Delete Post';
+    deleteBtn.innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      </svg>
+      Delete
+    `;
+
+    actionsDiv.appendChild(editLink);
+    actionsDiv.appendChild(deleteBtn);
+    tdActions.appendChild(actionsDiv);
+
+    tr.appendChild(tdIndex);
+    tr.appendChild(tdTitle);
+    tr.appendChild(tdCategory);
+    tr.appendChild(tdStatus);
+    tr.appendChild(tdDate);
+    tr.appendChild(tdActions);
+
+    tableBody.appendChild(tr);
+    });
   }
 
-  if (emptyState) emptyState.style.display = 'none';
+  // Hook up status filter tab clicks
+  const statusFilterBtns = document.querySelectorAll('#dashboardStatusFilters .filter-btn');
+  statusFilterBtns.forEach(btn => {
+    btn.onclick = () => {
+      statusFilterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentStatusFilter = btn.getAttribute('data-status');
+      renderTableRows();
+    };
+  });
 
-  tableBody.innerHTML = userPosts.map((post, index) => {
-    const isPublished = post.status === 'published';
-    const statusClass = isPublished ? 'published' : 'draft';
-    const statusLabel = isPublished ? 'Published' : 'Draft';
-
-    return `
-      <tr id="row-${post.id}">
-        <td><strong>#${index + 1}</strong></td>
-        <td>
-          <span class="table-post-title" title="${escapeHtml(post.title)}">
-            ${escapeHtml(post.title)}
-          </span>
-        </td>
-        <td><span class="card-badge" style="position:static;">${escapeHtml(post.category)}</span></td>
-        <td>
-          <span class="status-badge ${statusClass}">${statusLabel}</span>
-        </td>
-        <td>${escapeHtml(post.date || 'Recent')}</td>
-        <td>
-          <div class="table-actions">
-            <a href="create-blog.html?id=${post.id}" class="btn btn-secondary btn-sm" title="Edit Post">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-              Edit
-            </a>
-            <button type="button" class="btn btn-danger btn-sm delete-post-btn" data-id="${post.id}" data-title="${escapeHtml(post.title)}" title="Delete Post">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              </svg>
-              Delete
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
+  // Initial table render
+  renderTableRows();
 }
 
 /**
@@ -153,18 +265,34 @@ function setupDeleteModal() {
   });
 
   // Confirm and execute deletion
-  confirmBtn.addEventListener('click', () => {
+  confirmBtn.addEventListener('click', async () => {
     if (!targetDeleteId) return;
 
-    let posts = getStoredPosts();
-    posts = posts.filter(p => p.id !== targetDeleteId);
-    saveStoredPosts(posts);
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Deleting...';
 
-    modal.classList.remove('active');
-    showToast('Post removed successfully', 'danger');
+    try {
+      // 1. Send DELETE request to Backend REST API (DELETE /api/blogs/:id)
+      await BlogAPI.deleteBlog(targetDeleteId);
+      showToast('Article deleted from server successfully', 'danger');
+    } catch (error) {
+      if (error.isNetworkError) {
+        // Fallback delete locally
+        let posts = getStoredPosts();
+        posts = posts.filter(p => p.id !== targetDeleteId && p._id !== targetDeleteId);
+        saveStoredPosts(posts);
+        showToast('Article deleted locally (Server offline)', 'warning');
+      } else {
+        showToast(error.message || 'Failed to delete blog post', 'danger');
+      }
+    } finally {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Yes, Delete Post';
+      modal.classList.remove('active');
 
-    const currentUser = getCurrentUser();
-    renderDashboardContent(currentUser);
-    targetDeleteId = null;
+      const currentUser = getCurrentUser();
+      renderDashboardContent(currentUser);
+      targetDeleteId = null;
+    }
   });
 }

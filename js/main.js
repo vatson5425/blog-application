@@ -1,17 +1,19 @@
 /**
  * Blogify - main.js
  * Common shared utility functions, data initialization, navigation, and notification helpers.
+ * Fully integrated with backend REST API and authentication session management.
  */
 
 // Key constants for LocalStorage
 const STORAGE_KEYS = {
   USERS: 'blogify_users',
   CURRENT_USER: 'blogify_current_user',
+  JWT_TOKEN: 'blogify_jwt_token',
   POSTS: 'blogify_posts',
   INITIALIZED: 'blogify_initialized_v1'
 };
 
-// Default Sample Posts for immediate rich presentation
+// Default Sample Posts for immediate rich presentation and fallback preview
 const DEFAULT_POSTS = [
   {
     id: 'post_101',
@@ -132,7 +134,7 @@ function getCurrentUser() {
 }
 
 /**
- * Retrieve all blog posts from LocalStorage
+ * Retrieve all blog posts from LocalStorage (Fallback / Offline support)
  */
 function getStoredPosts() {
   const postsJson = localStorage.getItem(STORAGE_KEYS.POSTS);
@@ -164,9 +166,7 @@ function showToast(message, type = 'success') {
 
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
-  toast.innerHTML = `
-    <span>${message}</span>
-  `;
+  toast.textContent = message;
 
   container.appendChild(toast);
 
@@ -181,8 +181,8 @@ function showToast(message, type = 'success') {
 /**
  * Update Header Navigation based on authentication state
  */
-function setupGlobalNav() {
-  const user = getCurrentUser();
+async function setupGlobalNav() {
+  let user = getCurrentUser();
   const navActionsContainer = document.getElementById('navAuthActions');
   const navMobileToggle = document.getElementById('navToggleBtn');
   const navMenu = document.getElementById('navLinksMenu');
@@ -194,26 +194,74 @@ function setupGlobalNav() {
     });
   }
 
+  // Proactively verify token with backend /api/auth/me to keep user profile fresh
+  const token = typeof getAuthToken === 'function' ? getAuthToken() : localStorage.getItem(STORAGE_KEYS.JWT_TOKEN);
+  if (token) {
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        user = data.user;
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+      } else if (res.status === 401) {
+        // Token expired or invalid on server - clear stale token
+        console.warn('Authentication token expired or invalid.');
+        if (typeof clearAuthSession === 'function') {
+          clearAuthSession();
+        } else {
+          localStorage.removeItem(STORAGE_KEYS.JWT_TOKEN);
+          localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+        }
+        user = null;
+      }
+    } catch (err) {
+      // Backend offline: keep existing cached user session
+    }
+  }
+
   // Update Auth buttons or user menu pill
   if (navActionsContainer) {
     if (user) {
-      navActionsContainer.innerHTML = `
-        <a href="dashboard.html" class="user-menu-pill" title="Go to Dashboard">
-          <span class="user-avatar-sm">${user.name.charAt(0).toUpperCase()}</span>
-          <span>${user.name.split(' ')[0]}</span>
-        </a>
-        <button id="navLogoutBtn" class="btn btn-outline btn-sm" type="button">Logout</button>
-      `;
-      const logoutBtn = document.getElementById('navLogoutBtn');
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
+      navActionsContainer.innerHTML = '';
+      
+      const userPill = document.createElement('a');
+      userPill.href = 'dashboard.html';
+      userPill.className = 'user-menu-pill';
+      userPill.title = 'Go to Dashboard';
+      
+      const avatar = document.createElement('span');
+      avatar.className = 'user-avatar-sm';
+      avatar.textContent = user.name ? user.name.charAt(0).toUpperCase() : 'U';
+      
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = user.name ? user.name.split(' ')[0] : 'User';
+      
+      userPill.appendChild(avatar);
+      userPill.appendChild(nameSpan);
+
+      const logoutBtn = document.createElement('button');
+      logoutBtn.id = 'navLogoutBtn';
+      logoutBtn.className = 'btn btn-outline btn-sm';
+      logoutBtn.type = 'button';
+      logoutBtn.textContent = 'Logout';
+
+      logoutBtn.addEventListener('click', () => {
+        if (typeof clearAuthSession === 'function') {
+          clearAuthSession();
+        } else {
+          localStorage.removeItem(STORAGE_KEYS.JWT_TOKEN);
           localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
-          showToast('Logged out successfully', 'success');
-          setTimeout(() => {
-            window.location.href = 'index.html';
-          }, 600);
-        });
-      }
+        }
+        showToast('Logged out successfully', 'success');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 600);
+      });
+
+      navActionsContainer.appendChild(userPill);
+      navActionsContainer.appendChild(logoutBtn);
     } else {
       navActionsContainer.innerHTML = `
         <a href="login.html" class="btn btn-outline btn-sm">Login</a>
@@ -228,3 +276,54 @@ document.addEventListener('DOMContentLoaded', () => {
   initStorage();
   setupGlobalNav();
 });
+
+/**
+ * --------------------------------------------------------------------------
+ * Global Shared Form Validation & Alert Banner Helpers
+ * Available across all pages (auth, blog editor, dashboard)
+ * --------------------------------------------------------------------------
+ */
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function showFieldError(inputElement, message) {
+  if (!inputElement) return;
+  inputElement.classList.add('input-error');
+  inputElement.classList.remove('input-success');
+  const parent = inputElement.parentElement;
+  if (parent) {
+    const errorElem = parent.querySelector('.form-error-msg');
+    if (errorElem) {
+      errorElem.textContent = message;
+      errorElem.classList.add('visible');
+    }
+  }
+}
+
+function clearFieldError(inputElement) {
+  if (!inputElement) return;
+  inputElement.classList.remove('input-error');
+  inputElement.classList.add('input-success');
+  const parent = inputElement.parentElement;
+  if (parent) {
+    const errorElem = parent.querySelector('.form-error-msg');
+    if (errorElem) {
+      errorElem.textContent = '';
+      errorElem.classList.remove('visible');
+    }
+  }
+}
+
+function showAlert(bannerElement, message, type = 'danger') {
+  if (!bannerElement) return;
+  bannerElement.textContent = message;
+  bannerElement.className = `alert-banner visible alert-${type}`;
+}
+
+function hideAlert(bannerElement) {
+  if (!bannerElement) return;
+  bannerElement.className = 'alert-banner';
+  bannerElement.textContent = '';
+}
+
