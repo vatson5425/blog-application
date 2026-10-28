@@ -321,16 +321,39 @@ async function setupBlogEditor() {
 
   if (editPostId) {
     try {
-      // 1. Try fetching from Backend REST API (GET /api/blogs/:id)
+      // 1. Fetch from Backend REST API (GET /api/blogs/:id)
       const res = await BlogAPI.getBlogById(editPostId);
       currentEditingPost = res.blog;
     } catch (e) {
-      // 2. Fallback to LocalStorage
+      // Handle not found or unauthorized
+      if (e.status === 403 || e.status === 404) {
+        showAlert(alertBanner, e.message || 'You are not authorized to edit this article or it does not exist.', 'danger');
+        if (publishBtn) publishBtn.disabled = true;
+        if (saveDraftBtn) saveDraftBtn.disabled = true;
+        return;
+      }
+      // Fallback to LocalStorage
       const localPosts = getStoredPosts();
       currentEditingPost = localPosts.find(p => (p._id === editPostId || p.id === editPostId));
     }
 
     if (currentEditingPost) {
+      // Check author ownership
+      const postAuthorId = (currentEditingPost.author && currentEditingPost.author._id)
+        ? currentEditingPost.author._id.toString()
+        : (currentEditingPost.author ? currentEditingPost.author.toString() : '');
+      const currentUserId = currentUser ? (currentUser.id || currentUser._id) : null;
+
+      if (postAuthorId && currentUserId && postAuthorId !== currentUserId.toString()) {
+        showAlert(alertBanner, 'Access denied. You can only edit your own blog posts.', 'danger');
+        if (publishBtn) publishBtn.disabled = true;
+        if (saveDraftBtn) saveDraftBtn.disabled = true;
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 1500);
+        return;
+      }
+
       if (pageHeading) pageHeading.textContent = 'Edit Blog Post';
       titleInput.value = currentEditingPost.title || '';
       categorySelect.value = currentEditingPost.category || 'Technology';
