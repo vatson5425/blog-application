@@ -16,13 +16,19 @@ app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, or same-origin)
-      if (!origin) return callback(null, true);
+      if (!origin || origin === 'null') return callback(null, true);
       
-      // Allow configured CLIENT_ORIGIN, localhost, and 127.0.0.1 variants
+      // Allow configured CLIENT_ORIGIN, localhost, and 127.0.0.1 variants (with or without port)
       if (
         origin === allowedOrigin ||
+        origin === 'http://localhost' ||
+        origin === 'https://localhost' ||
+        origin === 'http://127.0.0.1' ||
+        origin === 'https://127.0.0.1' ||
         origin.startsWith('http://localhost:') ||
-        origin.startsWith('http://127.0.0.1:')
+        origin.startsWith('https://localhost:') ||
+        origin.startsWith('http://127.0.0.1:') ||
+        origin.startsWith('https://127.0.0.1:')
       ) {
         return callback(null, true);
       }

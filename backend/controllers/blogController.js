@@ -148,7 +148,8 @@ const getBlogById = async (req, res, next) => {
       try {
         const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (blog.author._id.toString() !== decoded.id) {
+        const authorId = (blog.author && blog.author._id) ? blog.author._id.toString() : (blog.author ? blog.author.toString() : '');
+        if (authorId !== decoded.id) {
           return res.status(403).json({
             success: false,
             message: 'Access denied. You do not have permission to view this draft.'

@@ -28,42 +28,58 @@ function setupBlogCatalog() {
   let debounceTimer = null;
 
   async function fetchAndRenderBlogs() {
-    // Show subtle loading state if cards container is empty
-    if (!blogGrid.children.length) {
-      blogGrid.innerHTML = `
-        <div style="grid-column: 1/-1; text-align: center; padding: 3rem 0; color: var(--text-muted);">
-          <div style="display: inline-block; width: 32px; height: 32px; border: 3px solid var(--border-light); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-          <p style="margin-top: 1rem; font-weight: 500;">Loading latest articles from server...</p>
-        </div>
-      `;
-    }
-
-    let posts = [];
+    // Show loading state
+    blogGrid.innerHTML = `
+      <div id="blogLoadingSpinner" style="grid-column: 1/-1; text-align: center; padding: 3.5rem 1rem; color: var(--text-muted);">
+        <div style="display: inline-block; width: 36px; height: 36px; border: 3px solid var(--border-light); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+        <p style="margin-top: 1rem; font-weight: 500; font-size: 0.95rem;">Loading articles from MongoDB Atlas...</p>
+      </div>
+    `;
+    if (emptyState) emptyState.style.display = 'none';
 
     try {
-      // 1. Fetch from Backend REST API (GET /api/blogs?search=...&category=...)
+      // Fetch from MongoDB Atlas Backend REST API (GET /api/blogs?search=...&category=...)
       const res = await BlogAPI.getPublishedBlogs(searchTerm, activeCategory);
-      posts = res.blogs || [];
+      // Resilient response structure handling: supports res.blogs, res.data, res.posts, or raw array
+      let posts = [];
+      if (Array.isArray(res)) {
+        posts = res;
+      } else if (res && Array.isArray(res.blogs)) {
+        posts = res.blogs;
+      } else if (res && Array.isArray(res.data)) {
+        posts = res.data;
+      } else if (res && Array.isArray(res.posts)) {
+        posts = res.posts;
+      }
+      renderCards(posts);
     } catch (error) {
-      console.warn('Backend unavailable or returned error, using local fallback:', error.message);
-      // Fallback: LocalStorage sample posts
-      const allLocal = getStoredPosts();
-      posts = allLocal.filter(p => p.status === 'published');
-
-      if (activeCategory !== 'all') {
-        posts = posts.filter(p => p.category.toLowerCase() === activeCategory.toLowerCase());
+      console.error('Failed to load published blogs from database:', error);
+      blogGrid.innerHTML = `
+        <div id="blogFetchError" style="grid-column: 1/-1; text-align: center; padding: 3rem 1.5rem; background: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); max-width: 580px; margin: 0 auto;">
+          <div style="width: 54px; height: 54px; border-radius: 50%; background: var(--danger-bg); color: var(--danger); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary);">Failed to Load Articles</h3>
+          <p style="color: var(--text-secondary); font-size: 0.925rem; margin-bottom: 1.5rem; line-height: 1.6;">${escapeHtml(error.message || 'Unable to connect to the database. Please verify backend server and MongoDB status.')}</p>
+          <button type="button" class="btn btn-primary btn-sm" id="retryFetchBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.35rem;">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            Retry Connection
+          </button>
+        </div>
+      `;
+      const retryBtn = document.getElementById('retryFetchBtn');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', () => fetchAndRenderBlogs());
       }
-      if (searchTerm) {
-        const lower = searchTerm.toLowerCase();
-        posts = posts.filter(p =>
-          (p.title && p.title.toLowerCase().includes(lower)) ||
-          (p.description && p.description.toLowerCase().includes(lower)) ||
-          (p.content && p.content.toLowerCase().includes(lower))
-        );
-      }
+      if (resultsCount) resultsCount.textContent = 'Showing 0 articles';
     }
-
-    renderCards(posts);
   }
 
   function renderCards(posts) {
@@ -150,14 +166,11 @@ function setupBlogCatalog() {
       authorInfo.appendChild(avatar);
       authorInfo.appendChild(authorSpan);
 
-      const readBtn = document.createElement('button');
+      const readBtn = document.createElement('a');
       readBtn.className = 'btn btn-secondary btn-sm read-article-btn';
       readBtn.textContent = 'Read Post →';
+      readBtn.href = `blog-details.html?id=${encodeURIComponent(postId)}`;
       readBtn.setAttribute('data-id', postId);
-
-      readBtn.addEventListener('click', () => {
-        openArticleModal(post);
-      });
 
       footer.appendChild(authorInfo);
       footer.appendChild(readBtn);
@@ -169,6 +182,16 @@ function setupBlogCatalog() {
 
       card.appendChild(imgWrap);
       card.appendChild(body);
+
+      // Make card clickable
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', (e) => {
+        // Prevent double trigger if clicking on an interactive link/button inside
+        if (e.target.closest('a') || e.target.closest('button')) {
+          return;
+        }
+        window.location.href = `blog-details.html?id=${encodeURIComponent(postId)}`;
+      });
 
       blogGrid.appendChild(card);
     });

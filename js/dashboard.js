@@ -168,6 +168,18 @@ async function renderDashboardContent(user) {
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'table-actions';
 
+    const viewLink = document.createElement('a');
+    viewLink.href = `blog-details.html?id=${postId}`;
+    viewLink.className = 'btn btn-outline btn-sm';
+    viewLink.title = 'View Post';
+    viewLink.innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+      View
+    `;
+
     const editLink = document.createElement('a');
     editLink.href = `create-blog.html?id=${postId}`;
     editLink.className = 'btn btn-secondary btn-sm';
