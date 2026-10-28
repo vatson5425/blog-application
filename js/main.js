@@ -256,7 +256,7 @@ async function setupGlobalNav() {
         }
         showToast('Logged out successfully', 'success');
         setTimeout(() => {
-          window.location.href = 'index.html';
+          window.location.href = 'login.html';
         }, 600);
       });
 

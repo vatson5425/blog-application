@@ -13,29 +13,104 @@ async function setupDashboard() {
   const dashboardContainer = document.getElementById('dashboardView');
   if (!dashboardContainer) return; // Not on dashboard.html
 
-  // 1. Auth Guard: Ensure user is logged in
-  const currentUser = getCurrentUser();
+  // 1. Auth Guard: Ensure token exists
   const token = typeof getAuthToken === 'function' ? getAuthToken() : localStorage.getItem(STORAGE_KEYS.JWT_TOKEN);
+  let currentUser = getCurrentUser();
 
-  if (!currentUser && !token) {
+  if (!token) {
     showToast('Please login to access the creator dashboard', 'danger');
     setTimeout(() => {
       window.location.href = 'login.html';
-    }, 800);
+    }, 600);
     return;
   }
 
-  // 2. Personalize Header
-  const userNameElem = document.getElementById('dashUserName');
-  const userGreetingElem = document.getElementById('dashGreetingName');
-  if (userNameElem && currentUser) userNameElem.textContent = currentUser.name;
-  if (userGreetingElem && currentUser) userGreetingElem.textContent = currentUser.name;
+  // 2. Fetch fresh user profile from backend (GET /api/auth/me)
+  try {
+    const profileRes = await AuthAPI.getMe();
+    if (profileRes && profileRes.user) {
+      currentUser = profileRes.user;
+      setAuthSession(token, currentUser);
+    }
+  } catch (authError) {
+    console.error('Failed to authenticate session:', authError);
+    if (authError.status === 401) {
+      if (typeof clearAuthSession === 'function') clearAuthSession();
+      showToast('Session expired or invalid. Please log in again.', 'danger');
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 800);
+      return;
+    }
+    // Network or other error - notify user
+    const notice = document.getElementById('profileErrorNotice');
+    if (notice) {
+      notice.style.display = 'block';
+      notice.textContent = `Unable to verify session with backend: ${authError.message}`;
+    }
+  }
 
-  // 3. Render Stats & Post List
+  // 3. Render Profile Card & Header
+  renderProfileSection(currentUser);
+
+  // 4. Bind Hero Logout Button
+  const heroLogoutBtn = document.getElementById('dashboardHeroLogoutBtn');
+  if (heroLogoutBtn) {
+    heroLogoutBtn.addEventListener('click', () => {
+      performLogout();
+    });
+  }
+
+  // 5. Render Stats & Post List
   await renderDashboardContent(currentUser);
 
-  // 4. Setup Delete Confirmation Modal
+  // 6. Setup Delete Confirmation Modal
   setupDeleteModal();
+}
+
+/**
+ * Render user profile card in dashboard
+ */
+function renderProfileSection(user) {
+  if (!user) return;
+  const userNameElem = document.getElementById('dashUserName');
+  const userGreetingElem = document.getElementById('dashGreetingName');
+  const profileNameElem = document.getElementById('profileName');
+  const profileEmailElem = document.getElementById('profileEmail');
+  const profileAvatarElem = document.getElementById('profileAvatar');
+  const profileMemberSince = document.getElementById('profileMemberSince');
+
+  const displayName = user.name || 'Author';
+  const displayEmail = user.email || '';
+  const initial = displayName.charAt(0).toUpperCase();
+
+  if (userNameElem) userNameElem.textContent = displayName;
+  if (userGreetingElem) userGreetingElem.textContent = displayName.split(' ')[0];
+  if (profileNameElem) profileNameElem.textContent = displayName;
+  if (profileEmailElem) profileEmailElem.textContent = displayEmail;
+  if (profileAvatarElem) profileAvatarElem.textContent = initial;
+  if (profileMemberSince && user.createdAt) {
+    profileMemberSince.textContent = new Date(user.createdAt).toLocaleDateString('en-US', {
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+}
+
+/**
+ * Centralized Logout Handler
+ */
+function performLogout() {
+  if (typeof clearAuthSession === 'function') {
+    clearAuthSession();
+  } else {
+    localStorage.removeItem(STORAGE_KEYS.JWT_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+  }
+  showToast('Logged out successfully', 'success');
+  setTimeout(() => {
+    window.location.href = 'login.html';
+  }, 600);
 }
 
 /**
@@ -63,9 +138,23 @@ async function renderDashboardContent(user) {
     const res = await BlogAPI.getMyBlogs();
     userPosts = res.blogs || [];
   } catch (error) {
-    console.warn('Backend unavailable, using LocalStorage fallback for dashboard:', error.message);
-    const localPosts = getStoredPosts();
-    userPosts = localPosts.filter(p => !p.authorEmail || (user && p.authorEmail.toLowerCase() === user.email.toLowerCase()));
+    console.error('Failed to retrieve user blogs:', error);
+    if (error.status === 401) {
+      if (typeof clearAuthSession === 'function') clearAuthSession();
+      showToast('Session expired. Please log in again.', 'danger');
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 800);
+      return;
+    }
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 2.5rem; color: var(--danger);">
+          Failed to load your articles from server: ${escapeHtml(error.message)}
+        </td>
+      </tr>
+    `;
+    return;
   }
 
   // Statistics calculation
